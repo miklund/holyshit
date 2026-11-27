@@ -4,10 +4,10 @@ A World of Warcraft (Classic) addon with personal healing quality-of-life custom
 
 ## Features
 
-While you are in a party (or raid):
+While you are in a party inside a dungeon (not in raids or the open world):
 
 - **Under attack call-out**: when you take damage, yells "Help! I'm getting attacked!". Only damage triggers it (not pulling aggro), and it is silenced for 1 minute so repeated attacks do not spam.
-- **Out of mana warning**: when your mana drops below what the cheapest heal spell in your spellbook costs, says "I'm out of mana." in party chat. Silenced for 1 minute.
+- **Out of mana warning**: when your mana drops below what your Heal spell costs (highest known rank), says "I'm out of mana." in party chat. Silenced for 1 minute.
 
 ## Usage
 

@@ -2,19 +2,15 @@ local COOLDOWN = 60
 local ATTACKED_MSG = "Help! I'm getting attacked!"
 local MANA_MSG = "I'm out of mana."
 
-local HEAL_SPELLS = {
-    ["Lesser Heal"] = true, ["Heal"] = true, ["Greater Heal"] = true, ["Flash Heal"] = true,
-    ["Healing Touch"] = true, ["Regrowth"] = true, ["Rejuvenation"] = true,
-    ["Holy Light"] = true, ["Flash of Light"] = true,
-    ["Healing Wave"] = true, ["Lesser Healing Wave"] = true,
-}
+local HEAL_SPELL = "Heal"
 
 local lastAttacked, lastMana = 0, 0
 local playerGUID
 local outOfMana = false
 
-local function InGroup()
-    return IsInGroup and IsInGroup() or GetNumGroupMembers() > 0
+local function InDungeon()
+    local inInstance, instanceType = IsInInstance()
+    return inInstance and instanceType == "party" and IsInDungeon()
 end
 
 local function SpellCost(spellID)
@@ -28,8 +24,8 @@ local function SpellCost(spellID)
     end
 end
 
--- Cheapest mana cost among known heal spells (lowest rank counts).
-local function CheapestHealCost()
+-- Mana cost of the highest known rank of Heal (spellbook lists ranks in ascending order).
+local function HealCost()
     local best
     local i = 1
     while true do
@@ -40,9 +36,8 @@ local function CheapestHealCost()
             name = GetSpellName(i, "spell")
         end
         if not name then break end
-        if HEAL_SPELLS[name] and spellID then
-            local cost = SpellCost(spellID)
-            if cost and cost > 0 and (not best or cost < best) then best = cost end
+        if name == HEAL_SPELL and spellID then
+            best = SpellCost(spellID) or best
         end
         i = i + 1
     end
@@ -50,14 +45,14 @@ local function CheapestHealCost()
 end
 
 local function CheckMana()
-    if not InGroup() or UnitPowerType("player") ~= 0 then return end
-    local cost = CheapestHealCost()
+    if not InDungeon() or UnitPowerType("player") ~= 0 then return end
+    local cost = HealCost()
     if not cost then return end
     if UnitPower("player", 0) < cost then
         if not outOfMana and GetTime() - lastMana >= COOLDOWN then
             outOfMana = true
             lastMana = GetTime()
-            SendChatMessage(MANA_MSG, IsInRaid() and "RAID" or "PARTY")
+            SendChatMessage(MANA_MSG, "PARTY")
         end
     else
         outOfMana = false
@@ -65,7 +60,7 @@ local function CheckMana()
 end
 
 local function OnDamageTaken(sourceGUID)
-    if not InGroup() or sourceGUID == playerGUID then return end
+    if not InDungeon() or sourceGUID == playerGUID then return end
     if GetTime() - lastAttacked >= COOLDOWN then
         lastAttacked = GetTime()
         SendChatMessage(ATTACKED_MSG, "YELL")
@@ -91,6 +86,6 @@ end)
 
 SLASH_HOLYSHIT1 = "/holyshit"
 SlashCmdList["HOLYSHIT"] = function()
-    local cost = CheapestHealCost()
-    print("|cff00ff00Holyshit|r: attacked/mana messages repeat at most every " .. COOLDOWN .. "s. Cheapest heal cost: " .. (cost or "unknown"))
+    local cost = HealCost()
+    print("|cff00ff00Holyshit|r: attacked/mana messages repeat at most every " .. COOLDOWN .. "s. Heal cost: " .. (cost or "unknown"))
 end
