@@ -1,5 +1,4 @@
 local ADDON_NAME = ...
-local DTPS_ENABLED = false -- temporary bisect switch
 local COOLDOWN = 60
 local ATTACKED_MSG = "Help! I'm getting attacked!"
 local MANA_MSG = "I'm out of mana."
@@ -91,7 +90,7 @@ local function Dtps(guid)
 end
 
 -- Own frame parented to UIParent so Blizzard's secure frames are never modified (avoids taint).
-local overlay = DTPS_ENABLED and CreateFrame("Frame", nil, UIParent)
+local overlay = CreateFrame("Frame", nil, UIParent)
 if overlay then
     overlay:SetAllPoints(UIParent)
     overlay:SetFrameStrata("HIGH")
@@ -187,7 +186,7 @@ frame:SetScript("OnUpdate", function(_, elapsed)
     elapsedSum = elapsedSum + elapsed
     if elapsedSum >= 0.5 then
         elapsedSum = 0
-        if DTPS_ENABLED and HolyshitDB then UpdateDtps() end
+        if HolyshitDB then UpdateDtps() end
     end
 end)
 
