@@ -170,6 +170,9 @@ frame:SetScript("OnEvent", function(_, event, ...)
         if ... == ADDON_NAME then
             HolyshitDB = HolyshitDB or {}
             if HolyshitDB.dtps == nil then HolyshitDB.dtps = true end
+            local getMeta = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
+            local version = getMeta and getMeta(ADDON_NAME, "Version") or "?"
+            print("|cff00ff00Holyshit|r " .. version .. " loaded. Type /holyshit.")
         end
     elseif event == "PLAYER_LOGIN" then
         playerGUID = UnitGUID("player")
