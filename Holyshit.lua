@@ -60,7 +60,7 @@ local function OnDamageTaken()
 end
 
 -- Damage taken per second (DTPS) shown on the unit frames.
-local DTPS_WINDOW = 5
+local DTPS_WINDOW = 8
 local damageLog = {} -- guid -> { {time, amount}, ... }
 local dtpsTexts = {}
 local UNIT_FRAMES = {
