@@ -1,0 +1,8 @@
+## Interface: 16001
+## Title: Holyshit
+## Notes: Healing customizations: calls for help when attacked and warns when out of mana.
+## Author: miklund
+## Version: 0.1.0
+## IconTexture: Interface\Icons\Spell_Holy_GreaterHeal
+
+Holyshit.lua
