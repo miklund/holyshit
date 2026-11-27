@@ -1,3 +1,4 @@
+local ADDON_NAME = ...
 local COOLDOWN = 60
 local ATTACKED_MSG = "Help! I'm getting attacked!"
 local MANA_MSG = "I'm out of mana."
@@ -169,7 +170,7 @@ frame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 frame:RegisterEvent("UNIT_POWER_UPDATE")
 frame:SetScript("OnEvent", function(_, event, ...)
     if event == "ADDON_LOADED" then
-        if ... == "Holyshit" then
+        if ... == ADDON_NAME then
             HolyshitDB = HolyshitDB or {}
             if HolyshitDB.dtps == nil then HolyshitDB.dtps = true end
         end
