@@ -97,10 +97,15 @@ local function Dtps(guid)
     return total / DTPS_WINDOW
 end
 
+-- Own frame parented to UIParent so Blizzard's secure frames are never modified (avoids taint).
+local overlay = CreateFrame("Frame", nil, UIParent)
+overlay:SetAllPoints(UIParent)
+overlay:SetFrameStrata("HIGH")
+
 local function GetDtpsText(frame)
     local t = dtpsTexts[frame]
     if not t then
-        t = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        t = overlay:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
         if frame.unit and frame:GetName() and frame:GetName():find("^Compact") then
             t:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -3, 3)
         else
