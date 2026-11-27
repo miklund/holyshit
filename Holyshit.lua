@@ -126,7 +126,11 @@ local function ShowDtps(frame, unit)
         local v = Dtps(guid)
         if v >= 0.5 and PlaceText(t, frame) then
             t:SetText(string.format("%.0f", v))
-            t:SetTextColor(1, math.max(0, 1 - v / 300), 0)
+            local secondsLeft = UnitHealth(unit) / v
+            if secondsLeft <= 5 then t:SetTextColor(1, 0, 0)
+            elseif secondsLeft <= 10 then t:SetTextColor(1, 1, 0)
+            elseif secondsLeft <= 15 then t:SetTextColor(0, 1, 0)
+            else t:SetTextColor(1, 1, 1) end
             return
         end
     end
