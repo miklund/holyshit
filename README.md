@@ -9,9 +9,12 @@ While you are in a party inside a dungeon (not in raids or the open world):
 - **Under attack call-out**: when you take damage, yells "Help! I'm getting attacked!". Only damage triggers it (not pulling aggro), and it is silenced for 1 minute so repeated attacks do not spam.
 - **Out of mana warning**: when your mana drops below what your Heal spell costs (highest known rank), says "I'm out of mana." in party chat. Silenced for 1 minute.
 
+- **Damage per second on unit frames**: shows how much damage per second you and each party member are taking (averaged over the last 5 seconds) above the frame, so you can judge which heal to use. Works with the default Blizzard party frames; shown while grouped. Toggle with `/holyshit dtps` (saved between sessions).
+
 ## Usage
 
 - `/holyshit` shows the status and the cooldown settings.
+- `/holyshit dtps` toggles the damage per second display.
 
 ## Installation
 

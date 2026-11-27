@@ -67,25 +67,125 @@ local function OnDamageTaken(sourceGUID)
     end
 end
 
+-- Damage taken per second (DTPS) shown on the unit frames.
+local DTPS_WINDOW = 5
+local damageLog = {} -- guid -> { {time, amount}, ... }
+local dtpsTexts = {}
+local UNIT_FRAMES = {
+    player = "PlayerFrame",
+    party1 = "PartyMemberFrame1", party2 = "PartyMemberFrame2",
+    party3 = "PartyMemberFrame3", party4 = "PartyMemberFrame4",
+}
+
+local function RecordDamage(guid, amount)
+    local list = damageLog[guid]
+    if not list then list = {}; damageLog[guid] = list end
+    list[#list + 1] = { GetTime(), amount }
+end
+
+local function Dtps(guid)
+    local list = damageLog[guid]
+    if not list then return 0 end
+    local cutoff, total, kept = GetTime() - DTPS_WINDOW, 0, {}
+    for _, e in ipairs(list) do
+        if e[1] >= cutoff then
+            total = total + e[2]
+            kept[#kept + 1] = e
+        end
+    end
+    damageLog[guid] = kept
+    return total / DTPS_WINDOW
+end
+
+local function GetDtpsText(unit)
+    local t = dtpsTexts[unit]
+    if not t then
+        local parent = _G[UNIT_FRAMES[unit]]
+        if not parent then return end
+        t = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        t:SetPoint("BOTTOM", parent, "TOP", 0, -2)
+        dtpsTexts[unit] = t
+    end
+    return t
+end
+
+local function UpdateDtps()
+    for unit in pairs(UNIT_FRAMES) do
+        local t = GetDtpsText(unit)
+        if t then
+            local guid = UnitGUID(unit)
+            if HolyshitDB.dtps and guid and UnitExists(unit) and IsInGroup() then
+                local v = Dtps(guid)
+                if v > 0 then
+                    t:SetText(string.format("%.0f dps", v))
+                    t:SetTextColor(1, math.max(0, 1 - v / 300), 0)
+                else
+                    t:SetText("")
+                end
+            else
+                t:SetText("")
+            end
+        end
+    end
+end
+
+local function DamageAmount(subevent, ...)
+    if subevent == "SWING_DAMAGE" then
+        return (select(12, ...))
+    elseif subevent == "ENVIRONMENTAL_DAMAGE" then
+        return (select(13, ...))
+    elseif subevent == "SPELL_DAMAGE" or subevent == "RANGE_DAMAGE" or subevent == "SPELL_PERIODIC_DAMAGE" then
+        return (select(15, ...))
+    end
+end
+
 local frame = CreateFrame("Frame")
+frame:RegisterEvent("ADDON_LOADED")
 frame:RegisterEvent("PLAYER_LOGIN")
 frame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 frame:RegisterEvent("UNIT_POWER_UPDATE")
 frame:SetScript("OnEvent", function(_, event, ...)
-    if event == "PLAYER_LOGIN" then
+    if event == "ADDON_LOADED" then
+        if ... == "Holyshit" then
+            HolyshitDB = HolyshitDB or {}
+            if HolyshitDB.dtps == nil then HolyshitDB.dtps = true end
+        end
+    elseif event == "PLAYER_LOGIN" then
         playerGUID = UnitGUID("player")
     elseif event == "COMBAT_LOG_EVENT_UNFILTERED" then
-        local _, subevent, _, sourceGUID, _, _, _, destGUID = CombatLogGetCurrentEventInfo()
+        local info = { CombatLogGetCurrentEventInfo() }
+        local subevent, sourceGUID, destGUID = info[2], info[4], info[8]
         if destGUID == playerGUID and subevent:find("_DAMAGE$") then
             OnDamageTaken(sourceGUID)
+        end
+        local amount = DamageAmount(subevent, unpack(info))
+        if amount and destGUID and destGUID:find("^Player") then
+            RecordDamage(destGUID, amount)
         end
     elseif event == "UNIT_POWER_UPDATE" then
         if ... == "player" then CheckMana() end
     end
 end)
 
+local elapsedSum = 0
+frame:SetScript("OnUpdate", function(_, elapsed)
+    elapsedSum = elapsedSum + elapsed
+    if elapsedSum >= 0.5 then
+        elapsedSum = 0
+        if HolyshitDB then UpdateDtps() end
+    end
+end)
+
 SLASH_HOLYSHIT1 = "/holyshit"
-SlashCmdList["HOLYSHIT"] = function()
+SlashCmdList["HOLYSHIT"] = function(msg)
+    msg = (msg or ""):lower()
+    if msg == "dtps" then
+        HolyshitDB.dtps = not HolyshitDB.dtps
+        print("|cff00ff00Holyshit|r: damage per second display " .. (HolyshitDB.dtps and "on" or "off"))
+        UpdateDtps()
+        return
+    end
     local cost = HealCost()
     print("|cff00ff00Holyshit|r: attacked/mana messages repeat at most every " .. COOLDOWN .. "s. Heal cost: " .. (cost or "unknown"))
+    print("  /holyshit dtps - toggle damage per second on unit frames (currently " .. (HolyshitDB.dtps and "on" or "off") .. ")")
 end

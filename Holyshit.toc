@@ -4,5 +4,6 @@
 ## Author: miklund
 ## Version: 0.1.0
 ## IconTexture: Interface\Icons\Spell_Holy_GreaterHeal
+## SavedVariables: HolyshitDB
 
 Holyshit.lua
