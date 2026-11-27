@@ -15,35 +15,26 @@ local function InDungeon()
     return inInstance and instanceType == "party" and IsInGroup()
 end
 
-local function SpellCost(spellID)
-    if GetSpellPowerCost then
-        local costs = GetSpellPowerCost(spellID)
-        if costs then
-            for _, c in ipairs(costs) do
-                if c.type == 0 then return c.cost end
-            end
+local function PowerCost(spellID)
+    local getCost = (C_Spell and C_Spell.GetSpellPowerCost) or GetSpellPowerCost
+    local costs = getCost and getCost(spellID)
+    if costs then
+        for _, c in ipairs(costs) do
+            if c.type == 0 then return c.cost end
         end
     end
 end
 
--- Mana cost of the highest known rank of Heal (spellbook lists ranks in ascending order).
+-- Mana cost of the highest known rank of Heal (nil if Heal is not known).
 local function HealCost()
-    local best
-    local i = 1
-    while true do
-        local name, _, spellID
-        if GetSpellBookItemName then
-            name, _, spellID = GetSpellBookItemName(i, "spell")
-        else
-            name = GetSpellName(i, "spell")
-        end
-        if not name then break end
-        if name == HEAL_SPELL and spellID then
-            best = SpellCost(spellID) or best
-        end
-        i = i + 1
+    local spellID
+    if C_Spell and C_Spell.GetSpellInfo then
+        local info = C_Spell.GetSpellInfo(HEAL_SPELL)
+        spellID = info and info.spellID
+    elseif GetSpellInfo then
+        spellID = select(7, GetSpellInfo(HEAL_SPELL))
     end
-    return best
+    return spellID and PowerCost(spellID)
 end
 
 local function CheckMana()
@@ -61,8 +52,8 @@ local function CheckMana()
     end
 end
 
-local function OnDamageTaken(sourceGUID)
-    if not InDungeon() or sourceGUID == playerGUID then return end
+local function OnDamageTaken()
+    if not InDungeon() then return end
     if GetTime() - lastAttacked >= COOLDOWN then
         lastAttacked = GetTime()
         SendChatMessage(ATTACKED_MSG, "YELL")
@@ -165,20 +156,11 @@ local function UpdateDtps()
     end
 end
 
-local function DamageAmount(subevent, ...)
-    if subevent == "SWING_DAMAGE" then
-        return (select(12, ...))
-    elseif subevent == "ENVIRONMENTAL_DAMAGE" then
-        return (select(13, ...))
-    elseif subevent == "SPELL_DAMAGE" or subevent == "RANGE_DAMAGE" or subevent == "SPELL_PERIODIC_DAMAGE" then
-        return (select(15, ...))
-    end
-end
-
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("ADDON_LOADED")
 frame:RegisterEvent("PLAYER_LOGIN")
--- bisect step 2: combat/power events disabled
+frame:RegisterEvent("UNIT_COMBAT")
+frame:RegisterEvent("UNIT_POWER_UPDATE")
 
 frame:SetScript("OnEvent", function(_, event, ...)
     if event == "ADDON_LOADED" then
@@ -188,15 +170,12 @@ frame:SetScript("OnEvent", function(_, event, ...)
         end
     elseif event == "PLAYER_LOGIN" then
         playerGUID = UnitGUID("player")
-    elseif event == "COMBAT_LOG_EVENT_UNFILTERED" then
-        local info = { CombatLogGetCurrentEventInfo() }
-        local subevent, sourceGUID, destGUID = info[2], info[4], info[8]
-        if destGUID == playerGUID and subevent:find("_DAMAGE$") then
-            OnDamageTaken(sourceGUID)
-        end
-        local amount = DamageAmount(subevent, unpack(info))
-        if amount and destGUID and destGUID:find("^Player") then
-            RecordDamage(destGUID, amount)
+    elseif event == "UNIT_COMBAT" then
+        local unit, action, _, amount = ...
+        if action == "WOUND" and amount then
+            if unit == "player" then OnDamageTaken() end
+            local guid = UnitGUID(unit)
+            if guid then RecordDamage(guid, amount) end
         end
     elseif event == "UNIT_POWER_UPDATE" then
         if ... == "player" then CheckMana() end
