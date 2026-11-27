@@ -107,14 +107,23 @@ local function GetDtpsText(frame)
     local t = dtpsTexts[frame]
     if not t then
         t = overlay:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        if frame.unit and frame:GetName() and frame:GetName():find("^Compact") then
-            t:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -3, 3)
-        else
-            t:SetPoint("BOTTOM", frame, "TOP", 0, -2)
-        end
         dtpsTexts[frame] = t
     end
     return t
+end
+
+-- Positioned with absolute coordinates; text is never anchored to Blizzard's protected frames.
+local function PlaceText(t, frame)
+    local left, right, top, bottom = frame:GetLeft(), frame:GetRight(), frame:GetTop(), frame:GetBottom()
+    if not left then return false end
+    local ratio = frame:GetEffectiveScale() / UIParent:GetEffectiveScale()
+    t:ClearAllPoints()
+    if (frame:GetName() or ""):find("^Compact") then
+        t:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMLEFT", (right - 3) * ratio, (bottom + 3) * ratio)
+    else
+        t:SetPoint("BOTTOM", UIParent, "BOTTOMLEFT", (left + right) / 2 * ratio, (top - 2) * ratio)
+    end
+    return true
 end
 
 local function ShowDtps(frame, unit)
@@ -122,7 +131,7 @@ local function ShowDtps(frame, unit)
     local guid = unit and UnitGUID(unit)
     if HolyshitDB.dtps and guid and IsInGroup() and frame:IsVisible() then
         local v = Dtps(guid)
-        if v >= 0.5 then
+        if v >= 0.5 and PlaceText(t, frame) then
             t:SetText(string.format("%.0f", v))
             t:SetTextColor(1, math.max(0, 1 - v / 300), 0)
             return
