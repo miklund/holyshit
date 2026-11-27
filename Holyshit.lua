@@ -97,34 +97,52 @@ local function Dtps(guid)
     return total / DTPS_WINDOW
 end
 
-local function GetDtpsText(unit)
-    local t = dtpsTexts[unit]
+local function GetDtpsText(frame)
+    local t = dtpsTexts[frame]
     if not t then
-        local parent = _G[UNIT_FRAMES[unit]]
-        if not parent then return end
-        t = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        t:SetPoint("BOTTOM", parent, "TOP", 0, -2)
-        dtpsTexts[unit] = t
+        t = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        if frame.unit and frame:GetName() and frame:GetName():find("^Compact") then
+            t:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -3, 3)
+        else
+            t:SetPoint("BOTTOM", frame, "TOP", 0, -2)
+        end
+        dtpsTexts[frame] = t
     end
     return t
 end
 
+local function ShowDtps(frame, unit)
+    local t = GetDtpsText(frame)
+    local guid = unit and UnitGUID(unit)
+    if HolyshitDB.dtps and guid and IsInGroup() and frame:IsVisible() then
+        local v = Dtps(guid)
+        if v > 0 then
+            t:SetText(string.format("%.0f", v))
+            t:SetTextColor(1, math.max(0, 1 - v / 300), 0)
+            return
+        end
+    end
+    t:SetText("")
+end
+
 local function UpdateDtps()
-    for unit in pairs(UNIT_FRAMES) do
-        local t = GetDtpsText(unit)
-        if t then
-            local guid = UnitGUID(unit)
-            if HolyshitDB.dtps and guid and UnitExists(unit) and IsInGroup() then
-                local v = Dtps(guid)
-                if v > 0 then
-                    t:SetText(string.format("%.0f dps", v))
-                    t:SetTextColor(1, math.max(0, 1 - v / 300), 0)
-                else
-                    t:SetText("")
-                end
-            else
-                t:SetText("")
-            end
+    for unit, name in pairs(UNIT_FRAMES) do
+        local f = _G[name]
+        if f then ShowDtps(f, unit) end
+    end
+    -- Blizzard raid-style frames (party and raid)
+    for i = 1, 5 do
+        local f = _G["CompactPartyFrameMember" .. i]
+        if f then ShowDtps(f, f.displayedUnit or f.unit) end
+    end
+    for i = 1, 40 do
+        local f = _G["CompactRaidFrame" .. i]
+        if f then ShowDtps(f, f.displayedUnit or f.unit) end
+    end
+    for g = 1, 8 do
+        for m = 1, 5 do
+            local f = _G["CompactRaidGroup" .. g .. "Member" .. m]
+            if f then ShowDtps(f, f.displayedUnit or f.unit) end
         end
     end
 end
