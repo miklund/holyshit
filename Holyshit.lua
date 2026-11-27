@@ -116,7 +116,7 @@ local function ShowDtps(frame, unit)
     local guid = unit and UnitGUID(unit)
     if HolyshitDB.dtps and guid and IsInGroup() and frame:IsVisible() then
         local v = Dtps(guid)
-        if v > 0 then
+        if v >= 0.5 then
             t:SetText(string.format("%.0f", v))
             t:SetTextColor(1, math.max(0, 1 - v / 300), 0)
             return
