@@ -10,7 +10,7 @@ local outOfMana = false
 
 local function InDungeon()
     local inInstance, instanceType = IsInInstance()
-    return inInstance and instanceType == "party" and IsInDungeon()
+    return inInstance and instanceType == "party" and IsInGroup()
 end
 
 local function SpellCost(spellID)
