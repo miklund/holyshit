@@ -61,7 +61,7 @@ end
 
 -- Damage taken per second (DTPS) shown on the unit frames.
 local DTPS_WINDOW = 8
-local DTPS_MIN_SPAN = 1.5
+local DTPS_MIN_SPAN = 1
 local damageLog = {} -- guid -> { {time, amount}, ... }
 local dtpsTexts = {}
 local UNIT_FRAMES = {
