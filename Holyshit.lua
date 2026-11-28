@@ -61,6 +61,7 @@ end
 
 -- Damage taken per second (DTPS) shown on the unit frames.
 local DTPS_WINDOW = 8
+local DTPS_MIN_SPAN = 1.5
 local damageLog = {} -- guid -> { {time, amount}, ... }
 local dtpsTexts = {}
 local UNIT_FRAMES = {
@@ -86,7 +87,10 @@ local function Dtps(guid)
         end
     end
     damageLog[guid] = kept
-    return total / DTPS_WINDOW
+    if #kept == 0 then return 0 end
+    -- Divide by time since the first hit so a fresh burst is not diluted by the full window.
+    local span = math.min(DTPS_WINDOW, math.max(DTPS_MIN_SPAN, GetTime() - kept[1][1]))
+    return total / span
 end
 
 -- Own frame parented to UIParent so Blizzard's secure frames are never modified (avoids taint).
